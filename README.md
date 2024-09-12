@@ -1,9 +1,3 @@
-# Tic Tac Toe
-
-Sure! Here’s a structured `README.md` for your Tic-Tac-Toe project:
-
----
-
 # Tic-Tac-Toe
 
 Welcome to **Tic-Tac-Toe**, a classic 2-player game where you take turns to place your marker ('X' or 'O') on a 3x3 board. The game ends when one player gets three markers in a row, column, or diagonal, or if the board is full and there’s no winner.
