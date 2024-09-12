@@ -8,34 +8,63 @@ let gameBoard = [
   ["-", "-", "-"],
 ];
 
+// Player names and scores
+let playerNames = {};
+let playerScores = { X: 0, O: 0 };
+
 // Display the current state of the board
 function displayBoard(board) {
-  // Convert each row to a string with ' | ' between cells
   const rows = board.map((row) => row.join(" | "));
-  // Join rows with a separator between each row
   console.log(rows.join("\n=========\n"));
+}
+
+// Get player names
+function getPlayerNames() {
+  playerNames.X = readlineSync.question(
+    chalk.cyan("Enter the name of Player 1 (X): ")
+  );
+  if (gameMode === "p") {
+    playerNames.O = readlineSync.question(
+      chalk.cyan("Enter the name of Player 2 (O): ")
+    );
+  } else {
+    playerNames.O = "Computer"; // Assign a default name for Player 2 in computer mode
+  }
+}
+
+// Get the game mode
+function getGameMode() {
+  const mode = readlineSync.question(
+    chalk.magenta(
+      "Do you want to play against another player or against the computer? (p/c): "
+    )
+  );
+  return mode.toLowerCase();
 }
 
 // Get the player's move from the user
 function getPlayerMove(player) {
-  // Prompt the player for their move
   const move = readlineSync.question(
-    `Player ${player}, enter your move (row column): `
+    chalk.yellow(`${playerNames[player]}, enter your move (row column): `)
   );
-  // Split the input into row and column, then convert to 0-based index
   const [row, col] = move.split(" ").map(Number);
   return { row: row - 1, col: col - 1 };
 }
 
+// Function for computer to make a move
+function getComputerMove() {
+  let row, col;
+  do {
+    row = Math.floor(Math.random() * 3);
+    col = Math.floor(Math.random() * 3);
+  } while (!isValidMove(gameBoard, row, col));
+  console.log(chalk.magenta(`Computer chooses move: ${row + 1} ${col + 1}`));
+  return { row, col };
+}
+
 // Validate the move to ensure it's within the board and the cell is empty
 function isValidMove(board, row, col) {
-  return (
-    row >= 0 &&
-    row < 3 && // Check row index
-    col >= 0 &&
-    col < 3 && // Check column index
-    board[row][col] === "-" // Check if cell is empty
-  );
+  return row >= 0 && row < 3 && col >= 0 && col < 3 && board[row][col] === "-";
 }
 
 // Place the player's marker on the board at the specified location
@@ -45,29 +74,24 @@ function placeMarker(board, row, col, marker) {
 
 // Check if there is a winning condition on the board
 function checkWin(board) {
-  // Define all possible winning lines (rows, columns, diagonals)
   const lines = [
-    // Rows
     [board[0][0], board[0][1], board[0][2]],
     [board[1][0], board[1][1], board[1][2]],
     [board[2][0], board[2][1], board[2][2]],
-    // Columns
     [board[0][0], board[1][0], board[2][0]],
     [board[0][1], board[1][1], board[2][1]],
     [board[0][2], board[1][2], board[2][2]],
-    // Diagonals
     [board[0][0], board[1][1], board[2][2]],
     [board[0][2], board[1][1], board[2][0]],
   ];
 
-  // Check each line for a winning condition
   for (const [a, b, c] of lines) {
     if (a !== "-" && a === b && a === c) {
-      return a; // Return the winning marker
+      return a;
     }
   }
 
-  return null; // No winner
+  return null;
 }
 
 // Check if the board is completely filled
@@ -76,61 +100,37 @@ function isBoardFull(board) {
 }
 
 // Handle the end of the game by asking if the players want to restart
-function handleGameEnd() {
+function handleGameEnd(winner) {
+  if (winner) {
+    console.log(chalk.green(`${playerNames[winner]} wins!`));
+    playerScores[winner]++;
+  } else if (isBoardFull(gameBoard)) {
+    console.log(chalk.blue("The game is a draw!"));
+  }
+
+  console.log(
+    chalk.yellow(
+      `Current Scores: ${playerNames.X} (X) - ${playerScores.X}, ${playerNames.O} (O) - ${playerScores.O}`
+    )
+  );
+
   const restartChoice = readlineSync
-    .question("Do you want to restart the game? (yes/no): ")
+    .question(chalk.cyan("Do you want to restart the game? (y/n): "))
     .toLowerCase();
 
-  if (restartChoice === "yes") {
-    // Reset the board to the initial state
+  if (restartChoice === "y") {
     gameBoard = [
       ["-", "-", "-"],
       ["-", "-", "-"],
       ["-", "-", "-"],
     ];
-    return true; // Restart the game
+    return true;
   } else {
     console.log(chalk.yellow("Thanks for playing!"));
-    return false; // End the program
+    return false;
   }
 }
 
-// Main function to play the game
-function playGame() {
-  let currentPlayer = "X"; // Start with Player X
-  let gameActive = true; // Flag to control the game loop
-
-  while (gameActive) {
-    displayBoard(gameBoard); // Show the current board
-    const { row, col } = getPlayerMove(currentPlayer); // Get the move from the current player
-
-    if (isValidMove(gameBoard, row, col)) {
-      placeMarker(gameBoard, row, col, currentPlayer); // Place the marker on the board
-
-      const winner = checkWin(gameBoard); // Check if there is a winner
-
-      if (winner) {
-        displayBoard(gameBoard); // Show the final board
-        console.log(chalk.green(`Player ${winner} wins!`)); // Announce the winner
-        gameActive = false; // End the game
-      } else if (isBoardFull(gameBoard)) {
-        displayBoard(gameBoard); // Show the final board
-        console.log(chalk.blue("The game is a draw!")); // Announce a draw
-        gameActive = false; // End the game
-      } else {
-        // Switch to the other player
-        currentPlayer = currentPlayer === "X" ? "O" : "X";
-      }
-    } else {
-      console.log(chalk.red("Invalid move. Try again.")); // Notify the player of an invalid move
-    }
-  }
-
-  // Handle the end of the game, either restarting or quitting
-  if (handleGameEnd()) {
-    playGame(); // Restart the game
-  }
-}
 // Intro & rules function
 const displayRules = () => {
   console.log(chalk.gray("\nRules of the Game:"));
@@ -157,8 +157,71 @@ const displayRules = () => {
   console.log(chalk.gray("\n=========================================\n"));
 };
 
+// Main function to play the game
+function playGame(gameMode) {
+  let currentPlayer = "X";
+  let gameActive = true;
+
+  while (gameActive) {
+    displayRules(); // Display rules at the start of each turn
+    displayBoard(gameBoard); // Show the current board
+
+    let row, col;
+    if (gameMode === "c" && currentPlayer === "O") {
+      // Computer's turn
+      ({ row, col } = getComputerMove());
+    } else {
+      // Player's turn
+      const move = getPlayerMove(currentPlayer);
+      row = move.row;
+      col = move.col;
+    }
+
+    if (isValidMove(gameBoard, row, col)) {
+      placeMarker(gameBoard, row, col, currentPlayer); // Place the marker on the board
+
+      const winner = checkWin(gameBoard); // Check if there is a winner
+
+      if (winner) {
+        console.clear(); // Clear the console
+        displayRules(); // Display rules again after game end
+        displayBoard(gameBoard); // Show the final board
+        handleGameEnd(winner); // Handle end of game
+        gameActive = false; // End the game
+      } else if (isBoardFull(gameBoard)) {
+        console.clear(); // Clear the console
+        displayRules(); // Display rules again after game end
+        displayBoard(gameBoard); // Show the final board
+        handleGameEnd(null); // Handle end of game
+        gameActive = false; // End the game
+      } else {
+        // Switch to the other player
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+      }
+    } else {
+      console.clear(); // Clear the console before showing invalid move message
+      displayRules(); // Display rules to ensure visibility
+      console.log(chalk.red("Invalid move. Try again.")); // Notify the player of an invalid move
+    }
+  }
+
+  // Handle the end of the game, either restarting or quitting
+  if (handleGameEnd()) {
+    playGame(gameMode); // Restart the game
+  }
+}
+
 // Start the game
 console.log(chalk.blue.bold("Welcome to Tic-Tac-Toe!"));
 
-displayRules(); // Display rules before starting the game
-playGame(); // Start the main game function
+// Display rules once before starting
+displayRules();
+
+// Get game mode
+const gameMode = getGameMode();
+
+// Get player names
+getPlayerNames();
+
+// Start the main game function
+playGame(gameMode);
